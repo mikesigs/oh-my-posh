@@ -15,5 +15,26 @@
   "go.formatTool": "gofmt",
   "go.formatFlags": [
     "-s"
-  ]
+  ],
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#6dfea3",
+    "activityBar.activeBorder": "#af80fe",
+    "activityBar.background": "#6dfea3",
+    "activityBar.foreground": "#15202b",
+    "activityBar.inactiveForeground": "#15202b99",
+    "activityBarBadge.background": "#af80fe",
+    "activityBarBadge.foreground": "#15202b",
+    "sash.hoverBorder": "#6dfea3",
+    "statusBar.background": "#3bfd83",
+    "statusBar.foreground": "#15202b",
+    "statusBarItem.hoverBackground": "#08fc63",
+    "statusBarItem.remoteBackground": "#3bfd83",
+    "statusBarItem.remoteForeground": "#15202b",
+    "titleBar.activeBackground": "#3bfd83",
+    "titleBar.activeForeground": "#15202b",
+    "titleBar.inactiveBackground": "#3bfd8399",
+    "titleBar.inactiveForeground": "#15202b99"
+  },
+  "peacock.color": "#3bfd83",
+  "peacock.remoteColor": "#c0f2c7"
 }
