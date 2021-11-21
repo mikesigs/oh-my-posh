@@ -28,7 +28,7 @@ Show details about the connected WiFi network.
 - connected_icon: `string` - the icon to use when WiFi is connected - defaults to `\uFAA8`
 - connected_icon: `string` - the icon to use when WiFi is disconnected - defaults to `\uFAA9`
 - template: `string` - A go [text/template][go-text-template] template extended with [sprig][sprig]
-utilizing the properties below - 
+utilizing the properties below -
 defaults to `{{if .Connected}}{{.SSID}} {{.Signal}}% {{.ReceiveRate}}Mbps{{else}}{{.State}}{{end}}`
 
 ## Template Properties
