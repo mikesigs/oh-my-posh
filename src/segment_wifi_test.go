@@ -10,15 +10,9 @@ import (
 )
 
 type wifiArgs struct {
-	shell    string
-	platform string
-	isWsl    bool
-
-	command       string
-	commandOutput string
-	commandError  error
-	hasCommand    bool
-
+	commandOutput   string
+	commandError    error
+	hasCommand      bool
 	displayError    bool
 	segmentTemplate string
 }
@@ -61,13 +55,21 @@ func getNetshString(args *netshStringArgs) string {
 	return fmt.Sprintf(netshString, args.state, args.ssid, args.radioType, args.authentication, args.channel, args.receiveRate, args.transmitRate, args.signal)
 }
 
-func bootStrapWifiWindowsPwshTest(args *wifiArgs) *wifi {
-	args.platform = windowsPlatform
-	args.shell = pwsh
-	args.command = "netsh"
-	args.isWsl = false
+func bootStrapEnvironment(args *wifiArgs) *wifi {
+	env := new(MockedEnvironment)
+	env.On("getPlatform", nil).Return(windowsPlatform)
+	env.On("isWsl", nil).Return(false)
+	env.On("hasCommand", "netsh").Return(args.hasCommand)
+	env.On("runCommand", mock.Anything, mock.Anything).Return(args.commandOutput, args.commandError)
 
-	env, props := bootStrapEnvironment(args)
+	props := &properties{
+		values: map[Property]interface{}{
+			DisplayError:     args.displayError,
+			SegmentTemplate:  args.segmentTemplate,
+			ConnectedIcon:    "",
+			DisconnectedIcon: "",
+		},
+	}
 
 	k := &wifi{
 		env:   env,
@@ -77,62 +79,44 @@ func bootStrapWifiWindowsPwshTest(args *wifiArgs) *wifi {
 	return k
 }
 
-func bootStrapEnvironment(args *wifiArgs) (*MockedEnvironment, *properties) {
-	env := new(MockedEnvironment)
-	env.On("getPlatform", nil).Return(args.platform)
-	env.On("isWsl", nil).Return(args.isWsl)
-	env.On("hasCommand", args.command).Return(args.hasCommand)
-	env.On("runCommand", mock.Anything, mock.Anything).Return(args.commandOutput, args.commandError)
-	env.On("getShellName", nil).Return(args.shell)
-
-	props := &properties{
-		values: map[Property]interface{}{
-			DisplayError:    args.displayError,
-			SegmentTemplate: args.segmentTemplate,
-		},
-	}
-
-	return env, props
-}
-
-func TestWifi_Enabled_ForWindowsPwsh_WhenCommandNotFound_IsNotEnabled(t *testing.T) {
+func TestWifi_Enabled_ForWindows_WhenCommandNotFound_IsNotEnabled(t *testing.T) {
 	args := &wifiArgs{
 		hasCommand: false,
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.False(t, wifi.enabled())
 }
 
-func TestWifi_Enabled_ForWindowsPwsh_WhenRunCommandFails_IsNotEnabled(t *testing.T) {
+func TestWifi_Enabled_ForWindows_WhenRunCommandFails_IsNotEnabled(t *testing.T) {
 	args := &wifiArgs{
 		commandError: errors.New("Oh noes!"),
 		hasCommand:   true,
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.False(t, wifi.enabled())
 }
 
-func TestWifi_Enabled_ForWindowsPwsh_WhenRunCommandFailsWithDisplayError_IsEnabledWithErrorState(t *testing.T) {
+func TestWifi_Enabled_ForWindows_WhenRunCommandFailsWithDisplayError_IsEnabledWithErrorState(t *testing.T) {
 	args := &wifiArgs{
 		hasCommand:   true,
 		commandError: errors.New("Oh noes!"),
 		displayError: true,
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.True(t, wifi.enabled())
 	assert.Equal(t, "WIFI ERR", wifi.State)
 }
 
-func TestWifi_Enabled_ForWindowsPwsh_HappyPath_IsEnabled(t *testing.T) {
+func TestWifi_Enabled_ForWindows_HappyPath_IsEnabled(t *testing.T) {
 	args := &wifiArgs{
 		hasCommand:    true,
 		commandOutput: "",
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.True(t, wifi.enabled())
 }
 
-func TestWifi_Enabled_ForWindowsPwsh_HappyPath(t *testing.T) {
+func TestWifi_Enabled_ForWindows_HappyPath(t *testing.T) {
 	expected := &netshStringArgs{
 		state:          "connected",
 		ssid:           "ohsiggy",
@@ -148,7 +132,7 @@ func TestWifi_Enabled_ForWindowsPwsh_HappyPath(t *testing.T) {
 		hasCommand:    true,
 		commandOutput: getNetshString(expected),
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	enabled := wifi.enabled()
 	assert.True(t, enabled)
 	assert.Equal(t, expected.state, wifi.State)
@@ -161,7 +145,7 @@ func TestWifi_Enabled_ForWindowsPwsh_HappyPath(t *testing.T) {
 	assert.Equal(t, expected.signal, wifi.Signal)
 }
 
-func TestWifi_String_ForWindowsPwsh_HappyPath(t *testing.T) {
+func TestWifi_String_ForWindows_HappyPath(t *testing.T) {
 	expected := &netshStringArgs{
 		state:          "connected",
 		ssid:           "ohsiggy",
@@ -178,7 +162,7 @@ func TestWifi_String_ForWindowsPwsh_HappyPath(t *testing.T) {
 		commandOutput:   getNetshString(expected),
 		segmentTemplate: "{{.State}}{{.SSID}}{{.RadioType}}{{.Authentication}}{{.Channel}}{{.ReceiveRate}}{{.TransmitRate}}{{.Signal}}",
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.True(t, wifi.enabled())
 
 	expectedString := fmt.Sprintf("%s%s%s%s%d%d%d%d",
@@ -186,7 +170,7 @@ func TestWifi_String_ForWindowsPwsh_HappyPath(t *testing.T) {
 	assert.Equal(t, expectedString, wifi.string())
 }
 
-func TestWifi_String_ForWindowsPwsh_TemplateRenderError_ReturnsError(t *testing.T) {
+func TestWifi_String_ForWindows_TemplateRenderError_ReturnsError(t *testing.T) {
 	expected := &netshStringArgs{
 		state:          "connected",
 		ssid:           "ohsiggy",
@@ -203,7 +187,7 @@ func TestWifi_String_ForWindowsPwsh_TemplateRenderError_ReturnsError(t *testing.
 		commandOutput:   getNetshString(expected),
 		segmentTemplate: "{{.DoesNotExist}}",
 	}
-	wifi := bootStrapWifiWindowsPwshTest(args)
+	wifi := bootStrapEnvironment(args)
 	assert.True(t, wifi.enabled())
 
 	assert.Equal(t, "unable to create text based on template", wifi.string())

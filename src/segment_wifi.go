@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 type wifi struct {
 	props          *properties
 	env            environmentInfo
+	Connected      bool
 	State          string
 	SSID           string
 	RadioType      string
@@ -20,15 +22,11 @@ type wifi struct {
 }
 
 const (
-	netshState          = "State"
-	netshSSID           = "SSID"
-	netshRadioType      = "Radio type"
-	netshAuthentication = "Authentication"
-	netshChannel        = "Channel"
-	netshReceiveRate    = "Receive rate (Mbps)"
-	netshTransmitRate   = "Transmit rate (Mbps)"
-	netshSignal         = "Signal"
+	ConnectedIcon    Property = "connected_icon"
+	DisconnectedIcon Property = "disconnected_icon"
 )
+
+const defaultTemplate string = "{{if .Connected}}{{.SSID}} {{.Signal}}% {{.ReceiveRate}}Mbps{{else}}{{.State}}{{end}}"
 
 func (w *wifi) enabled() bool {
 	// If in Linux, who wnows. Gonna need a physical linux machine to develop this since the wlan interface isn't available in wsl
@@ -60,27 +58,28 @@ func (w *wifi) enabled() bool {
 			value := strings.TrimSpace(matches[2])
 
 			switch name {
-			case netshState:
+			case "State":
 				w.State = value
-			case netshSSID:
+				w.Connected = value == "connected"
+			case "SSID":
 				w.SSID = value
-			case netshRadioType:
+			case "Radio type":
 				w.RadioType = value
-			case netshAuthentication:
+			case "Authentication":
 				w.Authentication = value
-			case netshChannel:
+			case "Channel":
 				if v, err := strconv.Atoi(value); err == nil {
 					w.Channel = v
 				}
-			case netshReceiveRate:
+			case "Receive rate (Mbps)":
 				if v, err := strconv.Atoi(strings.Split(value, ".")[0]); err == nil {
 					w.ReceiveRate = v
 				}
-			case netshTransmitRate:
+			case "Transmit rate (Mbps)":
 				if v, err := strconv.Atoi(strings.Split(value, ".")[0]); err == nil {
 					w.TransmitRate = v
 				}
-			case netshSignal:
+			case "Signal":
 				if v, err := strconv.Atoi(strings.TrimRight(value, "%")); err == nil {
 					w.Signal = v
 				}
@@ -92,7 +91,6 @@ func (w *wifi) enabled() bool {
 }
 
 func (w *wifi) string() string {
-	const defaultTemplate = "{{.ssid}} {{.signal}}% {{.receiveRate}}Mbps"
 	segmentTemplate := w.props.getString(SegmentTemplate, defaultTemplate)
 	template := &textTemplate{
 		Template: segmentTemplate,
@@ -103,10 +101,53 @@ func (w *wifi) string() string {
 	if err != nil {
 		return err.Error()
 	}
-	return text
+
+	var icon string
+	if w.State == "connected" {
+		icon = w.props.getString(ConnectedIcon, "\uFAA8")
+	} else {
+		icon = w.props.getString(DisconnectedIcon, "\uFAA9")
+	}
+
+	return fmt.Sprintf("%s%s", icon, text)
 }
 
 func (w *wifi) init(props *properties, env environmentInfo) {
 	w.props = props
 	w.env = env
 }
+
+/* Disconnected
+`
+There is 1 interface on the system:
+
+    Name                   : Wi-Fi
+    Description            : Intel(R) Wireless-AC 9560 160MHz
+    GUID                   : 6bb8def2-9af2-4bd4-8be2-6bd54e46bdc9
+    Physical address       : d4:3b:04:e6:10:40
+    State                  : disconnected
+    Radio status           : Hardware On
+                             Software On
+
+    Hosted network status  : Not available
+
+`
+*/
+
+/* WiFi Off
+`
+
+There is 1 interface on the system:
+
+    Name                   : Wi-Fi
+    Description            : Intel(R) Wireless-AC 9560 160MHz
+    GUID                   : 6bb8def2-9af2-4bd4-8be2-6bd54e46bdc9
+    Physical address       : d4:3b:04:e6:10:40
+    State                  : disconnected
+    Radio status           : Hardware On
+                             Software Off
+
+    Hosted network status  : Not available
+
+`
+*/
