@@ -116,38 +116,3 @@ func (w *wifi) init(props *properties, env environmentInfo) {
 	w.props = props
 	w.env = env
 }
-
-/* Disconnected
-`
-There is 1 interface on the system:
-
-    Name                   : Wi-Fi
-    Description            : Intel(R) Wireless-AC 9560 160MHz
-    GUID                   : 6bb8def2-9af2-4bd4-8be2-6bd54e46bdc9
-    Physical address       : d4:3b:04:e6:10:40
-    State                  : disconnected
-    Radio status           : Hardware On
-                             Software On
-
-    Hosted network status  : Not available
-
-`
-*/
-
-/* WiFi Off
-`
-
-There is 1 interface on the system:
-
-    Name                   : Wi-Fi
-    Description            : Intel(R) Wireless-AC 9560 160MHz
-    GUID                   : 6bb8def2-9af2-4bd4-8be2-6bd54e46bdc9
-    Physical address       : d4:3b:04:e6:10:40
-    State                  : disconnected
-    Radio status           : Hardware On
-                             Software Off
-
-    Hosted network status  : Not available
-
-`
-*/
