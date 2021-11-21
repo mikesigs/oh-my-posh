@@ -168,7 +168,8 @@
             "owm",
             "sysinfo",
             "angular",
-            "php"
+            "php",
+            "wifi"
           ]
         },
         "style": {
@@ -1680,6 +1681,38 @@
                   },
                   "display_mode": {
                     "$ref": "#/definitions/display_mode"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "wifi" }
+            }
+          },
+          "then": {
+            "title": "WiFi Segment",
+            "description": "https://ohmyposh.dev/docs/wifi",
+            "properties": {
+              "properties": {
+                "properties": {
+                  "connected_icon": {
+                    "type": "string",
+                    "title": "Connected Icon",
+                    "description": "The icon to use when WiFi is connected",
+                    "default": "\uFAA8"
+                  },
+                  "disconnected_icon": {
+                    "type": "string",
+                    "title": "Disconnected Icon",
+                    "description": "The icon to use when WiFi is disconnected",
+                    "default": "\uFAA9"
+                  },
+                  "template": {
+                    "$ref": "#/definitions/template"
                   }
                 }
               }
