@@ -36,5 +36,6 @@
     "titleBar.inactiveForeground": "#15202b99"
   },
   "peacock.color": "#3bfd83",
-  "peacock.remoteColor": "#c0f2c7"
+  "peacock.remoteColor": "#c0f2c7",
+  "cSpell.enabled": false
 }

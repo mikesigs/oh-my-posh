@@ -2,31 +2,32 @@ package main
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 type wifi struct {
-	props              *properties
-	env                environmentInfo
-	State              string
-	SSID               string
-	RadioType          string
-	AuthenticationType string
-	Channel            string
-	ReceiveRate        string
-	TransmitRate       string
-	SignalStrength     string
+	props          *properties
+	env            environmentInfo
+	State          string
+	SSID           string
+	RadioType      string
+	Authentication string
+	Channel        int
+	ReceiveRate    int
+	TransmitRate   int
+	Signal         int
 }
 
 const (
-	State              = "State"
-	SSID               = "SSID"
-	RadioType          = "Radio type"
-	AuthenticationType = "Authentication"
-	Channel            = "Channel"
-	ReceiveRate        = "Receive rate (Mbps)"
-	TransmitRate       = "Transmit rate (Mbps)"
-	SignalStrength     = "Signal"
+	netshState          = "State"
+	netshSSID           = "SSID"
+	netshRadioType      = "Radio type"
+	netshAuthentication = "Authentication"
+	netshChannel        = "Channel"
+	netshReceiveRate    = "Receive rate (Mbps)"
+	netshTransmitRate   = "Transmit rate (Mbps)"
+	netshSignal         = "Signal"
 )
 
 func (w *wifi) enabled() bool {
@@ -42,7 +43,6 @@ func (w *wifi) enabled() bool {
 		displayError := w.props.getBool(DisplayError, false)
 		if err != nil && displayError {
 			w.State = "WIFI ERR"
-			// w.Namespace = w.Context
 			return true
 		}
 		if err != nil {
@@ -51,7 +51,7 @@ func (w *wifi) enabled() bool {
 
 		regex := regexp.MustCompile(`(.+) : (.+)`)
 		lines := strings.Split(cmdResult, "\n")
-		for _, line := range lines[3 : len(lines)-3] {
+		for _, line := range lines {
 			matches := regex.FindStringSubmatch(line)
 			if len(matches) != 3 {
 				continue
@@ -60,22 +60,30 @@ func (w *wifi) enabled() bool {
 			value := strings.TrimSpace(matches[2])
 
 			switch name {
-			case State:
+			case netshState:
 				w.State = value
-			case SSID:
+			case netshSSID:
 				w.SSID = value
-			case RadioType:
+			case netshRadioType:
 				w.RadioType = value
-			case AuthenticationType:
-				w.AuthenticationType = value
-			case Channel:
-				w.Channel = value
-			case ReceiveRate:
-				w.ReceiveRate = strings.Split(value, ".")[0]
-			case TransmitRate:
-				w.TransmitRate = strings.Split(value, ".")[0]
-			case SignalStrength:
-				w.SignalStrength = value
+			case netshAuthentication:
+				w.Authentication = value
+			case netshChannel:
+				if v, err := strconv.Atoi(value); err == nil {
+					w.Channel = v
+				}
+			case netshReceiveRate:
+				if v, err := strconv.Atoi(strings.Split(value, ".")[0]); err == nil {
+					w.ReceiveRate = v
+				}
+			case netshTransmitRate:
+				if v, err := strconv.Atoi(strings.Split(value, ".")[0]); err == nil {
+					w.TransmitRate = v
+				}
+			case netshSignal:
+				if v, err := strconv.Atoi(strings.TrimRight(value, "%")); err == nil {
+					w.Signal = v
+				}
 			}
 		}
 	}
@@ -84,7 +92,8 @@ func (w *wifi) enabled() bool {
 }
 
 func (w *wifi) string() string {
-	segmentTemplate := w.props.getString(SegmentTemplate, "{{.SSID}} {{.SignalStrength}} {{.ReceiveRate}}Mbps")
+	const defaultTemplate = "{{.ssid}} {{.signal}}% {{.receiveRate}}Mbps"
+	segmentTemplate := w.props.getString(SegmentTemplate, defaultTemplate)
 	template := &textTemplate{
 		Template: segmentTemplate,
 		Context:  w,
