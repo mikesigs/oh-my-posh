@@ -89,7 +89,7 @@ func TestWifi_Enabled_ForWindows_WhenCommandNotFound_IsNotEnabled(t *testing.T) 
 
 func TestWifi_Enabled_ForWindows_WhenRunCommandFails_IsNotEnabled(t *testing.T) {
 	args := &wifiArgs{
-		commandError: errors.New("Oh noes!"),
+		commandError: errors.New("intentional testing failure"),
 		hasCommand:   true,
 	}
 	wifi := bootStrapEnvironment(args)
@@ -99,7 +99,7 @@ func TestWifi_Enabled_ForWindows_WhenRunCommandFails_IsNotEnabled(t *testing.T) 
 func TestWifi_Enabled_ForWindows_WhenRunCommandFailsWithDisplayError_IsEnabledWithErrorState(t *testing.T) {
 	args := &wifiArgs{
 		hasCommand:   true,
-		commandError: errors.New("Oh noes!"),
+		commandError: errors.New("intentional testing failure"),
 		displayError: true,
 	}
 	wifi := bootStrapEnvironment(args)
